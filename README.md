@@ -1,6 +1,6 @@
 # SYNOPSIS
 
-Build is an opinionated build-tool. It uses `git` and `node.js`. It's made
+Build is an opinionated `c++` build-tool. It uses `git` and `node.js`. It's made
 for use with the `datcxx` project.
 
 # MOTIVATION
@@ -28,6 +28,10 @@ build -h
 
 ### INIT
 Use the `init` command to automatically create a `package.json` file.
+
+```bash
+build init
+```
 
 ### ADD DEPENDENCY
 Use the `add` command to add a dependency.
