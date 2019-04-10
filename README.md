@@ -5,11 +5,12 @@ for use with the `datcxx` project.
 
 # MOTIVATION
 
-C++ build tools and package managers are highly ambitious and introduce.
-Let's make something that...
+C++ build tools and package managers are highly ambitious and try to solve
+a larger set of problems than needed for this project. Let's make something
+that...
 
 - Uses a subset of `package.json`.
-- No semver, or package-locks, use commit hashes.
+- No semver, or package-locks, use git commit hashes.
 - No login, no users, no analytics, no fancy features.
 
 # INSTALL
@@ -22,7 +23,7 @@ npm install -g datcxx/build
 All projects must have a package.json.
 
 ```bash
-cxb -h
+build -h
 ```
 
 ### INIT
