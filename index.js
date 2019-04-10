@@ -32,22 +32,20 @@ function getPackage (cmd) {
       process.exit(r.status)
     }
 
-    console.log(r)
-
     pkg = {
       name: '',
       description: '',
-      dependencies: {},
-      main: 'index.cxx',
-      flags: ['-std=c++2a'],
       repository: {
         type: 'git',
         url: r.stdout.toString().trim()
       },
+      dependencies: {},
       scripts: {
         'test': 'c++ test/index.cxx -o test/index && ./test/index',
         'install': ''
-      }
+      },
+      flags: ['-std=c++2a'],
+      files: ['index.cxx']
     }
   }
 
@@ -72,6 +70,7 @@ function help (argv, pkg) {
     build h|help                print this help screen
     build i|install             recursively install all deps
     build init                  initialze a new project
+    build run <name>            run a sepecific script
 `)
 }
 
@@ -89,13 +88,13 @@ function add (argv, pkg) {
   writePackage(pkg)
 }
 
-async function build (argv, pkg) {
+function build (argv, pkg) {
   const sources = []
   const headers = []
 
   //
   // - visit each dep
-  // - join the path of the package and the main field.
+  // - join the path of the package and the sources field.
   // - if is a .hxx push to headers[]
   // - otherwise push to sources[]
   //
@@ -121,43 +120,52 @@ async function build (argv, pkg) {
 
       const dpkg = require(p)
 
-      if (!dpkg.main) {
-        console.error('Package has no main!')
+      if (!dpkg.files) {
+        console.error('Package has no files field!')
         process.exit(1)
       }
 
-      const v = path.join(pwd, path.dirname(dpkg.main))
+      dpkg.files.forEach(file => {
+        const v = path.join(pwd, path.dirname(file))
 
-      if (path.extname(dpkg.main).includes('.h')) {
-        headers.push(v)
-      } else if (path.extname(dpkg.main).includes('.c')) {
-        sources.push(path.join(pwd, dpkg.main))
-      }
+        if (path.extname(file).includes('.h')) {
+          headers.push(v)
+        } else if (path.extname(file).includes('.c')) {
+          sources.push(path.join(pwd, file))
+        }
+      })
     }
   }
 
   collect(process.cwd())
 
+  const NL = ' \\\n'
+
   const cmd = [
-    `c++`,
-    pkg.flags.join(' '),
-    argv.join(' '),
-    headers.map(h => `-I${h}`),
-    sources.join(' ')
-  ].join(' ')
+    `c++ ${NL}`,
+    pkg.flags.join(NL),
+    argv.join(NL),
+    sources.join(NL),
+    '',
+    headers.map(h => '-I' + h).join(NL)
+  ].join(' \\\n')
 
+  return run(cmd)
+}
+
+function run (script, opts) {
   if (process.env.DEBUG) {
-    console.log(cmd)
+    console.log(script)
   }
 
-  const r = execSync(cmd, argv)
-
-  if (r.status > 0) {
-    console.error(`${r.stderr.toString()}`)
-    process.exit(r.status)
-  } else {
-    console.log('OK')
+  try {
+    execSync(script, opts)
+  } catch (err) {
+    console.log(err.message)
+    process.exit(1)
   }
+
+  return 0
 }
 
 //
@@ -206,12 +214,7 @@ async function install (cwd, argv, pkg) {
       console.log(`${dpkg.name} running install script`)
       console.log('>', dpkg.scripts.install)
 
-      const r = spawnSync(dpkg.scripts.install, opts)
-
-      if (r.status > 0) {
-        console.error(`${r.stderr.toString()}`)
-        process.exit(r.status)
-      }
+      run(dpkg.scripts.install, opts)
     }
   }
 
@@ -250,8 +253,20 @@ async function main () {
       return install(process.cwd(), argv, pkg)
     case 'init':
       return init(argv, pkg)
-    default:
-      return build([cmd, ...argv], pkg)
+
+    case 'run':
+      const name = argv.shift()
+      const script = pkg.scripts[name]
+
+      const r = run(script, {})
+      if (r === 0) console.log('OK', name)
+
+      break
+
+    default: {
+      const r = build([cmd, ...argv], pkg)
+      if (r === 0) console.log('OK build')
+    }
   }
 }
 
