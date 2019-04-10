@@ -16,12 +16,12 @@ function getPackage (cmd) {
     const ENOTFOUND = err.message.includes('Cannot find')
 
     if (!ENOTFOUND) {
-      console.log(err.message)
+      console.error(err.message)
       process.exit(1)
     }
 
     if (!['h', 'help', 'init'].includes(cmd)) {
-      console.log('No package.json found. Try "build init"?')
+      console.error('No package.json found. Try "build init"?')
       process.exit(1)
     }
 
@@ -132,13 +132,13 @@ async function build (argv, pkg) {
     sources.join(' ')
   ].join(' ')
 
-  console.log(cmd + '\n\n')
-
   const r = execSync(cmd, argv)
 
   if (r.status > 0) {
-    console.log(`${r.stderr.toString()}`)
+    console.error(`${r.stderr.toString()}`)
     process.exit(r.status)
+  } else {
+    console.log('OK')
   }
 }
 
@@ -191,7 +191,7 @@ async function install (cwd, argv, pkg) {
       const r = execSync(dpkg.scripts.install, opts)
 
       if (r.status > 0) {
-        console.log(`${r.stderr.toString()}`)
+        console.error(`${r.stderr.toString()}`)
         process.exit(r.status)
       }
     }
