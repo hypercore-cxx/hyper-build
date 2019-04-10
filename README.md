@@ -42,7 +42,7 @@ build add foo/bar
 
 Adding a dependency **with** a hash will lock the dependency and
 install that exact commit at install-time. Without a hash, the dependency
-will get assign it the latest commit hash of the remote at install-time.
+will get assigned the latest commit hash of the remote at install-time.
 
 ```bash
 build add foo/bar ceda12f
