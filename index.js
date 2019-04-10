@@ -1,6 +1,6 @@
 const fs = require('fs')
 const path = require('path')
-const { execSync } = require('child_process')
+const { spawnSync, execSync } = require('child_process')
 const { version } = require('./package.json')
 
 const cloneOrPull = require('./git')
@@ -25,12 +25,25 @@ function getPackage (cmd) {
       process.exit(1)
     }
 
+    const r = spawnSync('git', ['ls-remote', '--get-url'], { cwd: process.cwd() })
+
+    if (r.status > 0) {
+      console.error(`${r.stderr.toString()}`)
+      process.exit(r.status)
+    }
+
+    console.log(r)
+
     pkg = {
       name: '',
       description: '',
       dependencies: {},
       main: 'index.cxx',
       flags: ['-std=c++2a'],
+      repository: {
+        type: 'git',
+        url: r.stdout.toString().trim()
+      },
       scripts: {
         'test': 'c++ test/index.cxx -o test/index && ./test/index',
         'install': ''
@@ -128,9 +141,14 @@ async function build (argv, pkg) {
   const cmd = [
     `c++`,
     pkg.flags.join(' '),
+    argv.join(' '),
     headers.map(h => `-I${h}`),
     sources.join(' ')
   ].join(' ')
+
+  if (process.env.DEBUG) {
+    console.log(cmd)
+  }
 
   const r = execSync(cmd, argv)
 
@@ -188,7 +206,7 @@ async function install (cwd, argv, pkg) {
       console.log(`${dpkg.name} running install script`)
       console.log('>', dpkg.scripts.install)
 
-      const r = execSync(dpkg.scripts.install, opts)
+      const r = spawnSync(dpkg.scripts.install, opts)
 
       if (r.status > 0) {
         console.error(`${r.stderr.toString()}`)

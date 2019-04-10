@@ -52,8 +52,12 @@ build i
 ```
 
 ### BUILD YOUR PROJECT
-To build your project. As of now, there is no caching in place.
+To build your project. Use `DEBUG=true` to show compiler commands.
 
 ```bash
 build
 ```
+
+# TODO
+Nice to have - as of now there is no caching strategy.
+
