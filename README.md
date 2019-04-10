@@ -58,6 +58,13 @@ To build your project. Use `DEBUG=true` to show compiler commands.
 build
 ```
 
+When no commands are specified, all flags are appended. For example
+following flags are sent to the compiler.
+
+```bash
+build -g -O0
+```
+
 # TODO
 Nice to have - as of now there is no caching strategy.
 
