@@ -82,7 +82,7 @@ function add (argv, pkg) {
 
   console.log(remote)
   if (shorthandRE.test(remote)) {
-    remote = `git@github.com:${remote}.git`
+    remote = `git@github.com:${remote}`
   }
 
   pkg.dependencies[remote] = hash
