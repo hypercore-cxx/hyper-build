@@ -1,6 +1,6 @@
 const fs = require('fs')
 const path = require('path')
-const { spawnSync, execSync } = require('child_process')
+const { execSync } = require('child_process')
 const { version } = require('./package.json')
 
 const cloneOrPull = require('./git')
@@ -25,21 +25,17 @@ function getPackage (cmd) {
       process.exit(1)
     }
 
-    const r = spawnSync('git', ['ls-remote', '--get-url'], { cwd: process.cwd() })
-
-    if (r.status > 0) {
-      console.error(`${r.stderr.toString()}`)
-      process.exit(r.status)
-    }
+    const remote = execSync('git', 'git remote get-url origin', { cwd: process.cwd() })
 
     pkg = {
       name: '',
       description: '',
       repository: {
         type: 'git',
-        url: r.stdout.toString().trim()
+        url: remote.toString().trim()
       },
       dependencies: {},
+      license: 'MIT',
       scripts: {
         'test': 'c++ test/index.cxx -o test/index && ./test/index',
         'install': ''
@@ -158,14 +154,19 @@ function run (script, opts) {
     console.log(script)
   }
 
+  let output = ''
+
   try {
-    execSync(script, opts)
+    output = execSync(script, opts)
   } catch (err) {
     console.log(err.message)
     process.exit(1)
   }
 
-  return 0
+  return {
+    code: 0,
+    output: output.toString().trim()
+  }
 }
 
 //
@@ -214,7 +215,7 @@ async function install (cwd, argv, pkg) {
       console.log(`${dpkg.name} running install script`)
       console.log('>', dpkg.scripts.install)
 
-      run(dpkg.scripts.install, opts)
+      console.log(run(dpkg.scripts.install, opts).output)
     }
   }
 
@@ -258,14 +259,16 @@ async function main () {
       const name = argv.shift()
       const script = pkg.scripts[name]
 
-      const r = run(script, {})
-      if (r === 0) console.log('OK', name)
-
+      console.log(run(script, {}).output)
       break
 
     default: {
       const r = build([cmd, ...argv], pkg)
-      if (r === 0) console.log('OK build')
+      if (r.code === 0) {
+        console.log('OK build')
+      } else {
+        console.error(r.output)
+      }
     }
   }
 }
