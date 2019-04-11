@@ -2,6 +2,7 @@ const fs = require('fs')
 const path = require('path')
 const { execSync } = require('child_process')
 const { version } = require('./package.json')
+const chalk = require('chalk')
 
 const cloneOrPull = require('./git')
 
@@ -25,7 +26,7 @@ function getPackage (cmd) {
       process.exit(1)
     }
 
-    const remote = execSync('git', 'git remote get-url origin', { cwd: process.cwd() })
+    const remote = execSync('git remote get-url origin', { cwd: process.cwd() })
 
     pkg = {
       name: '',
@@ -75,7 +76,6 @@ function add (argv, pkg) {
   const hash = argv[1] || '*'
   let remote = argv[0]
 
-  console.log(remote)
   if (shorthandRE.test(remote)) {
     remote = `git@github.com:${remote}`
   }
@@ -154,18 +154,23 @@ function run (script, opts) {
     console.log(script)
   }
 
+  let code = 0
   let output = ''
 
+  opts.stdio = 'pipe'
+  opts.encoding = 'utf-8'
+
   try {
-    output = execSync(script, opts)
+    const r = execSync(script, opts)
+    output = r.stdout.toString()
   } catch (err) {
-    console.log(err.message)
-    process.exit(1)
+    code = err.status
+    output = err.stderr.toString()
   }
 
   return {
-    code: 0,
-    output: output.toString().trim()
+    code,
+    output
   }
 }
 
@@ -238,6 +243,10 @@ function init (argv, pkg) {
   }
 }
 
+function highlightErrors (s) {
+  return s.replace(/error:(.*)\n/g, s => chalk.red(s))
+}
+
 async function main () {
   const argv = process.argv.slice(2)
   const cmd = argv.shift()
@@ -259,15 +268,23 @@ async function main () {
       const name = argv.shift()
       const script = pkg.scripts[name]
 
-      console.log(run(script, {}).output)
+      const r = run(script, {})
+
+      if (r.code === 0) {
+        console.log(r.output)
+      } else {
+        console.log(highlightErrors(r.output))
+      }
+
       break
 
     default: {
       const r = build([cmd, ...argv], pkg)
+
       if (r.code === 0) {
         console.log('OK build')
       } else {
-        console.error(r.output)
+        console.log(highlightErrors(r.output))
       }
     }
   }

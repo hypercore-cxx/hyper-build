@@ -16,5 +16,8 @@
     "url": "https://github.com/datcxx/build/issues"
   },
   "homepage": "https://github.com/datcxx/build#readme",
-  "description": ""
+  "description": "",
+  "dependencies": {
+    "chalk": "^2.4.2"
+  }
 }
