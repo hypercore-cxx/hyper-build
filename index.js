@@ -26,7 +26,15 @@ function getPackage (cmd) {
       process.exit(1)
     }
 
-    const remote = execSync('git remote get-url origin', { cwd: process.cwd() })
+    let remote = ''
+
+    try {
+      const opts = { stdio: 'pipe', cwd: process.cwd() }
+      remote = execSync('git remote get-url origin', opts)
+    } catch (err) {
+      console.log(String(err.stderr))
+      process.exit(1)
+    }
 
     pkg = {
       name: '',
@@ -154,23 +162,20 @@ function run (script, opts) {
     console.log(script)
   }
 
-  let code = 0
-  let output = ''
-
   opts.stdio = 'pipe'
-  opts.encoding = 'utf-8'
 
   try {
-    const r = execSync(script, opts)
-    output = r.stdout.toString()
-  } catch (err) {
-    code = err.status
-    output = err.stderr.toString()
-  }
+    const output = execSync(script, opts)
 
-  return {
-    code,
-    output
+    return {
+      status: 0,
+      output: output.toString()
+    }
+  } catch (err) {
+    return {
+      status: err.status,
+      output: err.output.filter(Boolean).map(buf => String(buf)).join('\n')
+    }
   }
 }
 
@@ -217,10 +222,10 @@ async function install (cwd, argv, pkg) {
     const opts = { cwd: info.target }
 
     if (dpkg.scripts.install) {
-      console.log(`${dpkg.name} running install script`)
-      console.log('>', dpkg.scripts.install)
+      console.log(`${dpkg.name} -> ${dpkg.scripts.install}`)
 
-      console.log(run(dpkg.scripts.install, opts).output)
+      const r = run(dpkg.scripts.install, opts)
+      console.log(r.output)
     }
   }
 
@@ -241,10 +246,6 @@ function init (argv, pkg) {
   } catch (err) {
     fs.mkdirSync(depsDir)
   }
-}
-
-function highlightErrors (s) {
-  return s.replace(/error:(.*)\n/g, s => chalk.red(s))
 }
 
 async function main () {
@@ -269,22 +270,17 @@ async function main () {
       const script = pkg.scripts[name]
 
       const r = run(script, {})
-
-      if (r.code === 0) {
-        console.log(r.output)
-      } else {
-        console.log(highlightErrors(r.output))
-      }
+      console.log(r.output)
 
       break
 
     default: {
       const r = build([cmd, ...argv], pkg)
 
-      if (r.code === 0) {
+      if (r === 0) {
         console.log('OK build')
       } else {
-        console.log(highlightErrors(r.output))
+        console.log(r.output)
       }
     }
   }
