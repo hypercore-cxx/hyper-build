@@ -162,6 +162,8 @@ function run (script, opts) {
     console.log(script)
   }
 
+  if (Array.isArray(script)) script = script.join(' ')
+
   opts.stdio = 'pipe'
 
   try {
