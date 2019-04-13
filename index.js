@@ -198,12 +198,16 @@ function run (script, opts = {}) {
 
     return {
       status: 0,
-      output: output.toString()
+      output: output.toString().trim()
     }
   } catch (err) {
     return {
       status: err.status,
-      output: err.output.filter(Boolean).map(buf => String(buf)).join('\n')
+      output: err.output
+        .filter(Boolean)
+        .map(buf => String(buf))
+        .join('\n')
+        .trim()
     }
   }
 }
@@ -295,8 +299,24 @@ async function main () {
       return init(argv, pkg)
 
     case 'test': {
+      if (!pkg.scripts) {
+        console.log('Package has no .scripts[] property.')
+        process.exit(1)
+      }
+
+      if (pkg.scripts.pretest) {
+        const r = run(pkg.scripts.pretest, argv)
+        console.log(r.output)
+      }
+
       const r = test(pkg.scripts.test, argv)
       console.log(r.output)
+
+      if (pkg.scripts.posttest) {
+        const r = run(pkg.scripts.posttest, argv)
+        console.log(r.output)
+      }
+
       break
     }
 

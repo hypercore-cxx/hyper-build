@@ -57,7 +57,8 @@ build i
 
 ### TESTING
 Use the `test` command to run the test script from the `package.json`. This will
-automatically discover and use all of dependecy headers and source files.
+automatically discover and use all of dependecy headers and source files. This
+will check for and try to run `pretest` and `posttest` scripts if possible.
 
 ```bash
 build test
@@ -107,7 +108,9 @@ event, and the value is the command to run at that point. The following scripts
 are supported.
 
 - `install` Run AFTER the package is installed.
-- `test` Run by the npm test command.
+- `pretest` Run BEFORE the test command.
+- `test` Run by the test command.
+- `posttest` Run AFTER the test command.
 
 The `test` script is special because it will automatically discover headers
 and compilation units needed by your dependencies.
