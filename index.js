@@ -91,7 +91,7 @@ function add (argv, pkg) {
   writePackage(pkg)
 }
 
-function build (argv, pkg) {
+function collect () {
   const sources = []
   const headers = []
 
@@ -101,7 +101,7 @@ function build (argv, pkg) {
   // - if is a .hxx push to headers[]
   // - otherwise push to sources[]
   //
-  const collect = pwd => {
+  const walk = pwd => {
     const files = fs.readdirSync(pwd)
 
     for (const file of files) {
@@ -115,7 +115,7 @@ function build (argv, pkg) {
       } catch (err) {}
 
       if (stat.isDirectory()) {
-        collect(p)
+        walk(p)
         continue
       }
 
@@ -140,23 +140,50 @@ function build (argv, pkg) {
     }
   }
 
-  collect(process.cwd())
+  walk(process.cwd())
+
+  return {
+    sources,
+    headers
+  }
+}
+
+function build (argv, pkg) {
+  const { headers, sources } = collect()
 
   const NL = ' \\\n'
 
   const cmd = [
     `c++ ${NL}`,
-    pkg.flags.join(NL),
+    pkg.flags ? pkg.flags.join(NL) : '',
     argv.join(NL),
     sources.join(NL),
-    '',
     headers.map(h => '-I' + h).join(NL)
   ].join(' \\\n')
 
   return run(cmd)
 }
 
-function run (script, opts) {
+function test (script, argv) {
+  if (Array.isArray(script)) {
+    script = script.join(' ')
+  }
+
+  const { headers, sources } = collect()
+
+  const NL = ' \\\n'
+
+  const cmd = [
+    script,
+    argv.join(NL),
+    sources.join(NL),
+    headers.map(h => '-I' + h).join(NL)
+  ].join(' \\\n')
+
+  return run(cmd)
+}
+
+function run (script, opts = {}) {
   if (process.env.DEBUG) {
     console.log(script)
   }
@@ -266,7 +293,13 @@ async function main () {
     case 'init':
       return init(argv, pkg)
 
-    case 'run':
+    case 'test': {
+      const r = test(pkg.scripts.test, argv)
+      console.log(r.output)
+      break
+    }
+
+    case 'run': {
       const name = argv.shift()
       const script = pkg.scripts[name]
 
@@ -274,6 +307,7 @@ async function main () {
       console.log(r.output)
 
       break
+    }
 
     default: {
       const r = build([cmd, ...argv], pkg)

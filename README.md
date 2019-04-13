@@ -100,6 +100,9 @@ are supported.
 - `install` Run AFTER the package is installed.
 - `test` Run by the npm test command.
 
+The `test` script is special because it will automatically discover headers
+and compilation units needed by your dependencies.
+
 You can also create your own arbitrary scripts and run them with the command
 `build run <script-name>`.
 
