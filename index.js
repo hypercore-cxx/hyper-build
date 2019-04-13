@@ -158,11 +158,14 @@ function build (argv, pkg) {
     `c++ ${NL}`,
     pkg.flags ? pkg.flags.join(NL) : '',
     argv.join(NL),
-    sources.join(NL),
-    headers.map(h => '-I' + h).join(NL)
+    sources.join(NL)
   ].join(' \\\n')
 
-  return run(cmd)
+  const env = {
+    CPLUS_INCLUDE_PATH: headers.join(path.delimiter)
+  }
+
+  return run(cmd, { env })
 }
 
 function test (script, argv) {
@@ -174,14 +177,22 @@ function test (script, argv) {
 
   const NL = ' \\\n'
 
+  script = script.replace('++', `++ ${sources.join(' ')} `)
+
   const cmd = [
     script,
-    argv.join(NL),
-    sources.join(NL),
-    headers.map(h => '-I' + h).join(NL)
+    argv.join(NL)
   ].join(' \\\n')
 
-  return run(cmd)
+  const env = {
+    CPLUS_INCLUDE_PATH: headers.join(path.delimiter)
+  }
+
+  if (process.env.DEBUG) {
+    console.log(env)
+  }
+
+  return run(cmd, { env })
 }
 
 function run (script, opts = {}) {
