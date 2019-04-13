@@ -55,10 +55,19 @@ Use the `i` command to recursively install dependencies.
 build i
 ```
 
-### BUILD YOUR PROJECT
+### TESTING
+Use the `test` command to run the test script from the `package.json`. This will
+automatically discover and use all of dependecy headers and source files.
+
+```bash
+build test
+```
+
+### BUILDING
 To build your project, don't specify any commands just type `build`. Use the
 `DEBUG=true` environment variable if you want to print what the compiler is
-being asked to do.
+being asked to do. The build tool will discover all dependecy headers and source
+files.
 
 ```bash
 build

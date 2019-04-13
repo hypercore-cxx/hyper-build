@@ -75,6 +75,7 @@ function help (argv, pkg) {
     build i|install             recursively install all deps
     build init                  initialze a new project
     build run <name>            run a sepecific script
+    build test                  run the test script
 `)
 }
 
