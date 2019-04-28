@@ -73,6 +73,7 @@ function help (argv, pkg) {
     build add <remote> <hash>   add git dependency at hash
     build h|help                print this help screen
     build i|install             recursively install all deps
+    build u|upgrade             recursively upgrade all deps
     build init                  initialze a new project
     build run <name>            run a sepecific script
     build test                  run the test script
@@ -228,7 +229,7 @@ function run (script, opts = {}) {
 // clones all dependencies into their `deps` dir.
 // runs their install scripts, depth first.
 //
-async function install (cwd, argv, pkg) {
+async function install (cwd, argv, pkg, upgrade) {
   if (!pkg.dependencies) {
     console.log(`${pkg.name} has no dependencies`)
     return
@@ -237,7 +238,7 @@ async function install (cwd, argv, pkg) {
   const deps = Object.entries(pkg.dependencies)
 
   for (let [remote, hash] of deps) {
-    if (hash === '*') {
+    if (hash === '*' || upgrade) {
       //
       // if the hash is '*', dont pass it,
       // let git tell us what hash to use.
@@ -306,6 +307,10 @@ async function main () {
     case 'i':
     case 'install':
       return install(process.cwd(), argv, pkg)
+    case 'u':
+    case 'upgrade':
+      return install(process.cwd(), argv, pkg, true)
+
     case 'init':
       return init(argv, pkg)
 
