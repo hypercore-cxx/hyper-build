@@ -71,9 +71,9 @@ function help (argv, pkg) {
 
     build [...args]             build the project
     build add <remote> <hash>   add git dependency at hash
-    build h|help                print this help screen
-    build i|install             recursively install all deps
-    build u|upgrade             recursively upgrade all deps
+    build h|help|-h             print this help screen
+    build i|install [dep]       recursively install dep(s)
+    build u|upgrade [dep]       recursively upgrade dep(s)
     build init                  initialze a new project
     build run <name>            run a sepecific script
     build test                  run the test script
@@ -235,7 +235,11 @@ async function install (cwd, argv, pkg, upgrade) {
     return
   }
 
-  const deps = Object.entries(pkg.dependencies)
+  let deps = Object.entries(pkg.dependencies)
+
+  if (argv[0]) {
+    deps = deps.filter(dep => dep[0].includes(argv[0]))
+  }
 
   for (let [remote, hash] of deps) {
     if (hash === '*' || upgrade) {
@@ -301,6 +305,7 @@ async function main () {
   switch (cmd) {
     case 'add':
       return add(argv, pkg)
+    case '-h':
     case 'h':
     case 'help':
       return help(argv, pkg)
