@@ -1,17 +1,7 @@
 # SYNOPSIS
 
-Build is an opinionated `c++` build-tool. It uses `git` and `node.js`. It's made
-for use with the `datcxx` project.
-
-# MOTIVATION
-
-C++ build tools and package managers are highly ambitious and try to solve
-a larger set of problems than needed for this project. Let's make something
-that...
-
-- Uses a subset of `package.json`.
-- No semver, or package-locks, use git commit hashes.
-- No login, no users, no analytics, no fancy features.
+Build is an opinionated `c++` build-tool and package manager. It uses `git` and
+`node.js`. It's made for use with the `datcxx` project, see [this][0] page..
 
 # INSTALL
 
@@ -48,11 +38,18 @@ will get assigned the latest commit hash of the remote at install-time.
 build add foo/bar ceda12f
 ```
 
-### INSTALL DEPENDENCIES
-Use the `i` command to recursively install dependencies.
+### ADD DEV DEPENDENCY
+Use the `add` command with the `-d` flag to add a development dependency.
 
 ```bash
-build i
+build add -d foo/bar
+```
+
+### INSTALL DEPENDENCIES
+Use the `-i` flag to recursively install dependencies.
+
+```bash
+build -i
 ```
 
 ### TESTING
@@ -128,6 +125,9 @@ You can also create your own arbitrary scripts and run them with the command
   "dependencies": {
     "git@github.com:datcxx/cxx-flat-tree": "c051eac4"
   },
+  "devDependencies": {
+    "git@github.com:heapwolf/cxx-tap": "a255ffb3"
+  },
   "scripts": {
     "test": "c++ -std=c++2a test/index.cxx lib/hypercore.so -o test/index && ./test/index",
     "greeting": "echo Hello, World"
@@ -145,6 +145,4 @@ You can also create your own arbitrary scripts and run them with the command
 }
 ```
 
-# TODO
-Nice to have - as of now there is no caching strategy.
-
+[0]:https://datcxx.github.io
