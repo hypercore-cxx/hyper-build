@@ -31,7 +31,7 @@ module.exports = async (cwd, remote, hash) => {
       `pull`,
       `--rebase`,
       `origin`,
-      'master'
+      `master`
     ]
 
     opts.cwd = path.join(target)

@@ -45,7 +45,7 @@ function getPackage (cmd) {
       dependencies: {},
       license: 'MIT',
       scripts: {
-        'test': 'c++ test/index.cxx -o test/index && ./test/index',
+        'test': 'c++ -std=c++2a test/index.cxx -o test/index && ./test/index',
         'install': ''
       },
       flags: ['-std=c++2a'],
@@ -69,18 +69,24 @@ function help (argv, pkg) {
   console.log(`
     build v${version}
 
-    build [...args]             build the project
-    build add <remote> <hash>   add git dependency at hash
-    build h|help|-h             print this help screen
-    build i|install [dep]       recursively install dep(s)
-    build u|upgrade [dep]       recursively upgrade dep(s)
-    build init                  initialze a new project
-    build run <name>            run a sepecific script
-    build test                  run the test script
+    build [...args]                   build the project [with ...args]
+    build -h|help                     print this help screen
+    build -i|install [dep]            recursively install dep(s)
+    build -u|upgrade [dep]            recursively upgrade dep(s)
+    build add <remote> [hash] [-d]    add git dep [at commit] [as dev]
+    build init                        initialze a new project
+    build run <name>                  run a sepecific script
+    build test                        run the test script
 `)
 }
 
 function add (argv, pkg) {
+  let isDevDep = argv.findIndex(s => s === '-d')
+
+  if (isDevDep > -1) {
+    argv.splice(isDevDep, 1)
+  }
+
   const shorthandRE = /^[^/ ]+\/[^/ ]+$/
   const hash = argv[1] || '*'
   let remote = argv[0]
@@ -89,7 +95,14 @@ function add (argv, pkg) {
     remote = `git@github.com:${remote}`
   }
 
-  pkg.dependencies[remote] = hash
+  if (isDevDep > -1) {
+    pkg.devDependencies = pkg.devDependencies || {}
+    pkg.devDependencies[remote] = hash
+  } else {
+    pkg.dependencies = pkg.dependencies || {}
+    pkg.dependencies[remote] = hash
+  }
+
   writePackage(pkg)
 }
 
@@ -230,53 +243,58 @@ function run (script, opts = {}) {
 // runs their install scripts, depth first.
 //
 async function install (cwd, argv, pkg, upgrade) {
-  if (!pkg.dependencies) {
-    console.log(`${pkg.name} has no dependencies`)
-    return
+  async function _install (prop, deps, cwd, argv, pkg, upgrade) {
+    for (let [remote, hash] of deps) {
+      if (hash === '*' || upgrade) {
+        //
+        // if the hash is '*', dont pass it,
+        // let git tell us what hash to use.
+        //
+        hash = undefined
+      }
+
+      const info = await cloneOrPull(cwd, remote, hash)
+      pkg[prop] = pkg[prop] || {}
+      pkg[prop][remote] = info.hash
+
+      //
+      // get the package.json for this dep
+      //
+      const dpkg = require(path.join(info.target, 'package.json'))
+
+      //
+      // recurse! (but only for "dependencies")
+      //
+      const dpkgDeps = Object.entries(dpkg.dependencies || {})
+      await _install('dependencies', dpkgDeps, info.target, argv, dpkg)
+
+      //
+      // If there are install script, run them (depth first).
+      //
+      if (!dpkg.scripts) continue
+
+      const opts = { cwd: info.target }
+
+      if (dpkg.scripts.install) {
+        console.log(`${dpkg.name} -> ${dpkg.scripts.install}`)
+
+        const r = run(dpkg.scripts.install, opts)
+        console.log(r.output)
+      }
+    }
   }
 
-  let deps = Object.entries(pkg.dependencies)
+  let deps = Object.entries(pkg.dependencies || {})
+  let devDeps = Object.entries(pkg.devDependencies || {})
 
   if (argv[0]) {
     deps = deps.filter(dep => dep[0].includes(argv[0]))
   }
 
-  for (let [remote, hash] of deps) {
-    if (hash === '*' || upgrade) {
-      //
-      // if the hash is '*', dont pass it,
-      // let git tell us what hash to use.
-      //
-      hash = undefined
-    }
+  const args = [cwd, argv, pkg, upgrade]
 
-    const info = await cloneOrPull(cwd, remote, hash)
-    pkg.dependencies[remote] = info.hash
-
-    //
-    // get the package.json for this dep
-    //
-    const dpkg = require(path.join(info.target, 'package.json'))
-
-    //
-    // recurse!
-    //
-    await install(info.target, argv, dpkg)
-
-    //
-    // If there are install script, run them (depth first).
-    //
-    if (!dpkg.scripts) continue
-
-    const opts = { cwd: info.target }
-
-    if (dpkg.scripts.install) {
-      console.log(`${dpkg.name} -> ${dpkg.scripts.install}`)
-
-      const r = run(dpkg.scripts.install, opts)
-      console.log(r.output)
-    }
-  }
+  if (deps.length) await _install('dependencies', deps, ...args)
+  if (devDeps.length) await _install('devDependencies', devDeps, ...args)
 
   writePackage(pkg)
 }
@@ -289,11 +307,26 @@ function init (argv, pkg) {
   }
 
   const depsDir = path.join(process.cwd(), 'deps')
+  const testDir = path.join(process.cwd(), 'test')
+  const gitIgnore = path.join(process.cwd(), '.gitignore')
 
   try {
     fs.statSync(depsDir)
   } catch (err) {
     fs.mkdirSync(depsDir)
+  }
+
+  try {
+    fs.statSync(testDir)
+  } catch (err) {
+    fs.mkdirSync(testDir)
+    fs.writeFileSync(path.join(testDir, 'index.cxx'), '')
+  }
+
+  try {
+    fs.statSync(gitIgnore)
+  } catch (err) {
+    fs.writeFileSync(gitIgnore, '/deps\n/test/index')
   }
 }
 
@@ -306,13 +339,12 @@ async function main () {
     case 'add':
       return add(argv, pkg)
     case '-h':
-    case 'h':
     case 'help':
       return help(argv, pkg)
-    case 'i':
+    case '-i':
     case 'install':
       return install(process.cwd(), argv, pkg)
-    case 'u':
+    case '-u':
     case 'upgrade':
       return install(process.cwd(), argv, pkg, true)
 
