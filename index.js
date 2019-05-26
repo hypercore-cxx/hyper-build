@@ -45,10 +45,13 @@ function getPackage (cmd) {
       dependencies: {},
       license: 'MIT',
       scripts: {
-        'test': 'c++ -std=c++2a test/index.cxx -o test/index && ./test/index',
+        'test': [
+          'clang++ -std=c++2a -stdlib=stdc++',
+          'test/index.cxx -o test/index && ./test/index'
+        ],
         'install': ''
       },
-      flags: ['-std=c++2a'],
+      flags: ['-std=c++2a', '-stdlib=stdc++', '-O3'],
       files: ['index.cxx']
     }
   }
@@ -166,10 +169,11 @@ function collect () {
 function build (argv, pkg) {
   const { headers, sources } = collect()
 
+  const compiler = pkg.compiler || 'clang++'
   const NL = ' \\\n'
 
   const cmd = [
-    `c++ ${NL}`,
+    `${compiler} ${NL}`,
     pkg.flags ? pkg.flags.join(NL) : '',
     argv.join(NL),
     sources.join(NL)

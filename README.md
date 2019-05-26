@@ -116,6 +116,8 @@ and compilation units needed by your dependencies.
 You can also create your own arbitrary scripts and run them with the command
 `build run <script-name>`.
 
+The `compiler` property (Optional, string) defaults to `clang++`.
+
 ### EXAMPLE
 
 ```json
@@ -130,14 +132,19 @@ You can also create your own arbitrary scripts and run them with the command
     "git@github.com:heapwolf/cxx-tap": "a255ffb3"
   },
   "scripts": {
-    "test": "c++ -std=c++2a test/index.cxx lib/hypercore.so -o test/index && ./test/index",
+    "test": [
+      "clang++ -std=c++2a -stdlib=libc++",
+      "test/index.cxx lib/hypercore.so -o test/index",
+      "&& ./test/index"
+    ],
     "greeting": "echo Hello, World"
   },
   "flags": [
     "-shared",
-    "-o ./lib/hypercore.so",
+    "-stdlib=libc++",
     "-std=c++2a",
-    "-ferror-limit=2"
+    "-ferror-limit=2",
+    "-o ./lib/hypercore.so"
   ],
   "files": [
     "index.hxx",
