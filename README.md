@@ -1,12 +1,13 @@
 # SYNOPSIS
 
-Build is an opinionated `c++` build-tool and package manager. It uses `git` and
-`node.js`. It's made for use with the `datcxx` project, see [this][0] page..
+Hyper-build is an opinionated `c++` build-tool and package manager. It uses
+`git` and `node.js`. It's made for use with the `datcxx` project, see [this][0]
+page.
 
 # INSTALL
 
 ```bash
-npm install -g datcxx/build
+npm install -g datcxx/hyper-build
 ```
 
 # USAGE

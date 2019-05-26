@@ -67,7 +67,7 @@ function writePackage (pkg) {
 
 function help (argv, pkg) {
   console.log(`
-    build v${version}
+    hyper-build v${version}
 
     build [...args]                   build the project [with ...args]
     build -h|help                     print this help screen
