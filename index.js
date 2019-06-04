@@ -46,12 +46,12 @@ function getPackage (cmd) {
       license: 'MIT',
       scripts: {
         'test': [
-          'clang++ -std=c++2a -stdlib=stdc++',
+          'clang++ -std=c++2a -stdlib=libc++',
           'test/index.cxx -o test/index && ./test/index'
         ],
         'install': ''
       },
-      flags: ['-std=c++2a', '-stdlib=stdc++', '-O3'],
+      flags: ['-std=c++2a', '-stdlib=libc++', '-O3'],
       files: ['index.cxx']
     }
   }

@@ -154,3 +154,4 @@ The `compiler` property (Optional, string) defaults to `clang++`.
 ```
 
 [0]:https://datcxx.github.io
+[1]:https://github.com/WebAssembly/wabt
