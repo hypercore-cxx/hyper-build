@@ -1,6 +1,6 @@
 const fs = require('fs')
 const path = require('path')
-const { execSync } = require('child_process')
+const { execSync, spawnSync } = require('child_process')
 const { version } = require('./package.json')
 
 const cloneOrPull = require('./git')
@@ -78,6 +78,7 @@ function help (argv, pkg) {
     build -u|upgrade [dep]            recursively upgrade dep(s)
     build add <remote> [hash] [-d]    add git dep [at commit] [as dev]
     build init                        initialze a new project
+    build find <lib>                  check if <lib> installed
     build run <name>                  run a sepecific script
     build test                        run the test script
 `)
@@ -334,6 +335,23 @@ function init (argv, pkg) {
   }
 }
 
+function find (argv, pkg) {
+  const name = argv[0]
+  const compiler = pkg.compiler || 'clang++'
+
+  try {
+    execSync(`${compiler} -l${name}`, { stdio: 'pipe' })
+  } catch (err) {
+    const s = String(err.stderr || '')
+
+    if (s.includes(`cannot find -l${name}`)) {
+      process.exit(1)
+    }
+  }
+
+  process.exit(0)
+}
+
 async function main () {
   const argv = process.argv.slice(2)
   const cmd = argv.shift()
@@ -342,6 +360,8 @@ async function main () {
   switch (cmd) {
     case 'add':
       return add(argv, pkg)
+    case 'find':
+      return find(argv, pkg)
     case '-h':
     case 'help':
       return help(argv, pkg)
