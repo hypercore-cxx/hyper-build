@@ -113,10 +113,12 @@ function add (argv, pkg) {
 function collect () {
   const sources = []
   const headers = []
+  let flags = []
 
   //
   // - visit each dep
   // - join the path of the package and the sources field.
+  // - collect all the flags
   // - if is a .hxx push to headers[]
   // - otherwise push to sources[]
   //
@@ -142,6 +144,10 @@ function collect () {
 
       const dpkg = require(p)
 
+      if (dpkg.flags) {
+        flags.push(...dpkg.flags)
+      }
+
       if (!dpkg.files) {
         console.error('Package has no files field!')
         process.exit(1)
@@ -161,9 +167,12 @@ function collect () {
 
   walk(process.cwd())
 
+  flags = [...new Set(flags)]
+
   return {
     sources,
-    headers
+    headers,
+    flags
   }
 }
 
@@ -192,11 +201,16 @@ function test (script, argv) {
     script = script.join(' ')
   }
 
-  const { headers, sources } = collect()
+  const { headers, sources, flags } = collect()
 
   const NL = ' \\\n'
 
-  script = script.replace('++', `++ ${sources.join(' ')} `)
+  const extras = [
+    flags.join(' '),
+    sources.join(' ')
+  ].join(' ')
+
+  script = script.replace('++', '++ ' + extras)
 
   const cmd = [
     script,
