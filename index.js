@@ -111,8 +111,8 @@ function add (argv, pkg) {
 }
 
 function collect () {
-  const sources = []
-  const headers = []
+  let sources = []
+  let headers = []
   let flags = []
 
   //
@@ -167,12 +167,29 @@ function collect () {
 
   walk(process.cwd())
 
-  flags = [...new Set(flags)]
+  //
+  // Headers are naturally deduped by their guards. But sources
+  // can become deuplicated when a dependency is installed by
+  // multiple packages. The rest of this code dedupes sources,
+  // headers and flags for each dependency.
+  //
+  const uniqueSources = {}
+
+  ;[...new Set(sources)].forEach(source => {
+    const index = source.lastIndexOf('/deps')
+    if (index === -1) {
+      uniqueSources[Math.random()] = source
+      return
+    }
+
+    const path = source.slice(index)
+    uniqueSources[path] = source
+  })
 
   return {
-    sources,
-    headers,
-    flags
+    sources: Object.values(uniqueSources),
+    headers: [...new Set(headers)],
+    flags: [...new Set(flags)]
   }
 }
 
